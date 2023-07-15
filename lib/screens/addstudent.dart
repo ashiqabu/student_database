@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:database_1/screens/widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -26,6 +25,7 @@ class _AddStudentState extends State<AddStudent> {
   Widget build(BuildContext context) {
     Future getImage(ImageSource source) async {
       try {
+        
         final image = await ImagePicker().pickImage(source: source);
         if (image == null) return;
         //final imageTemporary = File(image.path);

@@ -57,6 +57,7 @@ class Search extends SearchDelegate {
                             File(data.profile),
                           ),
                         ),
+                        
                         title: Text(data.name,
                             style: const TextStyle(fontSize: 20)),
                       ),
