@@ -5,7 +5,6 @@ import 'package:database_1/screens/profile.dart';
 import 'package:database_1/widgets/search.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../db/functions/db_functions.dart';
 import 'edit.dart';
 
 class ScreenHome extends StatelessWidget {
@@ -127,7 +126,7 @@ class ScreenHome extends StatelessWidget {
                   child: const Text("No")),
               TextButton(
                   onPressed: () {
-                    delete(index);
+                    value.deleteStudent(index);
                     Navigator.of(ctx).pop();
                   },
                   child: const Text("Yes"))
