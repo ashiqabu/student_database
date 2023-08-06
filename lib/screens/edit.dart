@@ -1,12 +1,12 @@
 import 'dart:io';
 
+import 'package:database_1/db/providers/student_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 
 import '../db/functions/db_functions.dart';
 import '../db/model/data_model.dart';
-
-File? photo;
+import '../db/providers/image_provide.dart';
 
 // ignore: must_be_immutable
 class EditStudent extends StatefulWidget {
@@ -30,20 +30,25 @@ class _EditStudentState extends State<EditStudent> {
 
   @override
   void initState() {
-    String name = studentListNotifier.value[widget.index].name;
+    final studentProvider =
+        Provider.of<ProviderForStudent>(context, listen: false);
+    String name = studentProvider.students[widget.index].name;
     namecntrl = TextEditingController(text: name);
 
-    String age = studentListNotifier.value[widget.index].age;
+    String age = studentProvider.students[widget.index].age;
     agecntrl = TextEditingController(text: age);
 
-    String address = studentListNotifier.value[widget.index].address;
+    String address = studentProvider.students[widget.index].address;
     addresscntrl = TextEditingController(text: address);
 
-    String number = studentListNotifier.value[widget.index].number;
+    String number = studentProvider.students[widget.index].number;
     numbercntrl = TextEditingController(text: number);
 
-    String profile = studentListNotifier.value[widget.index].profile;
-    photo = File(profile);
+    String profile = studentProvider.students[widget.index].profile;
+
+    final tempImageProvider =
+        Provider.of<TempImageProvider>(context, listen: false);
+    tempImageProvider.tempImagePath = profile;
     super.initState();
   }
 
@@ -51,7 +56,7 @@ class _EditStudentState extends State<EditStudent> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Edit ${studentListNotifier.value[widget.index].name}'),
+        title: Text('Edit ${numbercntrl.text}'),
       ),
       body: SafeArea(
         child: Padding(
@@ -59,158 +64,161 @@ class _EditStudentState extends State<EditStudent> {
           child: Form(
             key: formkey,
             child: SingleChildScrollView(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Align(
-                      alignment: Alignment.topCenter,
-                      child: photo?.path == null
-                          ? const CircleAvatar(
-                              backgroundImage: AssetImage('assets/man.jpg'),
-                              radius: 65,
-                            )
-                          : CircleAvatar(
-                              radius: 65,
-                              backgroundImage: FileImage(
-                                File(photo!.path),
-                              ),
-                            )),
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  ElevatedButton.icon(
-                      onPressed: () {
-                        getImage();
+              child: Consumer<TempImageProvider>(
+                builder: (context, value2, child) => Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Align(
+                        alignment: Alignment.topCenter,
+                        child: value2.tempImagePath == null
+                            ? const CircleAvatar(
+                                backgroundImage: AssetImage('assets/man.jpg'),
+                                radius: 65,
+                              )
+                            : CircleAvatar(
+                                radius: 65,
+                                backgroundImage: FileImage(
+                                  File(value2.tempImagePath!),
+                                ),
+                              )),
+                    const SizedBox(
+                      height: 10,
+                    ),
+                    ElevatedButton.icon(
+                        onPressed: () {
+                          getimage(value2);
+                        },
+                        icon: const Icon(Icons.photo),
+                        label: const Text('Add Photo')),
+                    const SizedBox(
+                      height: 10,
+                    ),
+                    TextFormField(
+                      controller: namecntrl,
+                      keyboardType: TextInputType.name,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                          label: Text('Name'),
+                          border: OutlineInputBorder(
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(10))),
+                          prefixIcon: Icon(Icons.person)),
+                      validator: (value) {
+                        if (namecntrl.text.isEmpty) {
+                          return 'name field is Empty';
+                        }
+                        return null;
                       },
-                      icon: const Icon(Icons.photo),
-                      label: const Text('Add Photo')),
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  TextFormField(
-                    controller: namecntrl,
-                    keyboardType: TextInputType.name,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
-                        label: Text('Name'),
-                        border: OutlineInputBorder(
-                            borderRadius:
-                                BorderRadius.all(Radius.circular(10))),
-                        prefixIcon: Icon(Icons.person)),
-                    validator: (value) {
-                      if (namecntrl.text.isEmpty) {
-                        return 'name field is Empty';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(
-                    height: 30,
-                  ),
-                  TextFormField(
-                    controller: agecntrl,
-                    keyboardType: TextInputType.number,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
-                        label: Text('Age'),
-                        border: OutlineInputBorder(
-                            borderRadius:
-                                BorderRadius.all(Radius.circular(10))),
-                        prefixIcon: Icon(Icons.calendar_month)),
-                    validator: (value) {
-                      if (agecntrl.text.isEmpty) {
-                        return 'Age field is Empty';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(
-                    height: 30,
-                  ),
-                  TextFormField(
-                    controller: addresscntrl,
-                    keyboardType: TextInputType.streetAddress,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
-                        label: Text('Address'),
-                        border: OutlineInputBorder(
-                            borderRadius:
-                                BorderRadius.all(Radius.circular(10))),
-                        prefixIcon: Icon(Icons.details)),
-                    validator: (value) {
-                      if (addresscntrl.text.isEmpty) {
-                        return 'Address field is Empty';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(
-                    height: 30,
-                  ),
-                  TextFormField(
-                    controller: numbercntrl,
-                    keyboardType: TextInputType.phone,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
-                        label: Text('Number'),
-                        border: OutlineInputBorder(
-                            borderRadius:
-                                BorderRadius.all(Radius.circular(10))),
-                        prefixIcon: Icon(Icons.phone)),
-                    maxLength: 10,
-                    validator: (value) {
-                      if (numbercntrl.text.isEmpty) {
-                        return 'Phone field is Empty';
-                      } else if (numbercntrl.text.length < 10) {
-                        return 'Enter a valid Phone Number';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(
-                    height: 30,
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            fixedSize: const Size(130, 50),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30)),
-                            backgroundColor: Colors.red,
-                          ),
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                          },
-                          icon: const Icon(Icons.cancel),
-                          label: const Text('Cancel')),
-                      ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
+                    ),
+                    const SizedBox(
+                      height: 30,
+                    ),
+                    TextFormField(
+                      controller: agecntrl,
+                      keyboardType: TextInputType.number,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                          label: Text('Age'),
+                          border: OutlineInputBorder(
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(10))),
+                          prefixIcon: Icon(Icons.calendar_month)),
+                      validator: (value) {
+                        if (agecntrl.text.isEmpty) {
+                          return 'Age field is Empty';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(
+                      height: 30,
+                    ),
+                    TextFormField(
+                      controller: addresscntrl,
+                      keyboardType: TextInputType.streetAddress,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                          label: Text('Address'),
+                          border: OutlineInputBorder(
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(10))),
+                          prefixIcon: Icon(Icons.details)),
+                      validator: (value) {
+                        if (addresscntrl.text.isEmpty) {
+                          return 'Address field is Empty';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(
+                      height: 30,
+                    ),
+                    TextFormField(
+                      controller: numbercntrl,
+                      keyboardType: TextInputType.phone,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                          label: Text('Number'),
+                          border: OutlineInputBorder(
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(10))),
+                          prefixIcon: Icon(Icons.phone)),
+                      maxLength: 10,
+                      validator: (value) {
+                        if (numbercntrl.text.isEmpty) {
+                          return 'Phone field is Empty';
+                        } else if (numbercntrl.text.length < 10) {
+                          return 'Enter a valid Phone Number';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(
+                      height: 30,
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
                               fixedSize: const Size(130, 50),
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(30)),
-                              backgroundColor: Colors.green[600]),
-                          onPressed: () {
-                            if (formkey.currentState!.validate()) {
-                              if (photo?.path == null) {
-                                addingFailed();
-                              } else {
-                                updateSuccess(studentListNotifier
-                                    .value[widget.index].id!);
-                                Navigator.of(context).pop();
+                              backgroundColor: Colors.red,
+                            ),
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                            icon: const Icon(Icons.cancel),
+                            label: const Text('Cancel')),
+                        ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                                fixedSize: const Size(130, 50),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(30)),
+                                backgroundColor: Colors.green[600]),
+                            onPressed: () {
+                              final tempImageProvider =
+                                  Provider.of<TempImageProvider>(context,
+                                      listen: false);
+                              if (formkey.currentState!.validate()) {
+                                if (tempImageProvider.tempImagePath == null) {
+                                  addingFailed();
+                                } else {
+                                  updateSuccess(widget.index);
+                                }
                               }
-                            }
-                          },
-                          icon: const Icon(Icons.send),
-                          label: const Text("Submit")),
-                    ],
-                  )
-                ],
+                            },
+                            icon: const Icon(Icons.send),
+                            label: const Text("Submit")),
+                      ],
+                    )
+                  ],
+                ),
               ),
             ),
           ),
@@ -219,16 +227,8 @@ class _EditStudentState extends State<EditStudent> {
     );
   }
 
-  Future<void> getImage() async {
-    final image = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (image == null) {
-      return;
-    }
-    final imageTemporary = File(image.path);
-
-    setState(() {
-      photo = imageTemporary;
-    });
+  void getimage(TempImageProvider value) async {
+    await value.getImage();
   }
 
   void addingFailed() {
@@ -244,14 +244,18 @@ class _EditStudentState extends State<EditStudent> {
   }
 
   void updateSuccess(int id) {
+    final value = Provider.of<ProviderForStudent>(context, listen: false);
+    final value2 = Provider.of<TempImageProvider>(context, listen: false);
     StudentModel st = StudentModel(
-        profile: photo!.path,
-        name: namecntrl.text.trim(),
-        age: agecntrl.text.trim(),
-        address: addresscntrl.text.trim(),
-        number: numbercntrl.text.trim(),
-        id: studentListNotifier.value[widget.index].id!);
-    editStudent(id, st);
+      profile: value2.tempImagePath!,
+      name: namecntrl.text.trim(),
+      age: agecntrl.text.trim(),
+      address: addresscntrl.text.trim(),
+      number: numbercntrl.text.trim(),
+    );
+    value.editStudent(id, st);
+    value2.tempImagePath = null;
+    value2.notify();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text("${namecntrl.text}'s details edittted successfully!"),
       backgroundColor: Colors.green,
@@ -261,5 +265,7 @@ class _EditStudentState extends State<EditStudent> {
       closeIconColor: Colors.white,
       duration: const Duration(seconds: 2),
     ));
+    value2.tempImagePath = null;
+    Navigator.of(context).pop();
   }
 }

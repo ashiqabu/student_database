@@ -1,10 +1,11 @@
 import 'dart:io';
+import 'package:database_1/db/providers/student_provider.dart';
 import 'package:database_1/screens/addstudent.dart';
 import 'package:database_1/screens/profile.dart';
 import 'package:database_1/widgets/search.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../db/functions/db_functions.dart';
-import '../db/model/data_model.dart';
 import 'edit.dart';
 
 class ScreenHome extends StatelessWidget {
@@ -12,7 +13,8 @@ class ScreenHome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    getstudent();
+    final studentProvider = Provider.of<ProviderForStudent>(context);
+    studentProvider.getStudent();
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -31,7 +33,7 @@ class ScreenHome extends StatelessWidget {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.of(context)
-              .push(MaterialPageRoute(builder: (ctx) => const AddStudent()));
+              .push(MaterialPageRoute(builder: (ctx) => AddStudent()));
         },
         child: const Icon(Icons.add),
       ),
@@ -39,72 +41,80 @@ class ScreenHome extends StatelessWidget {
       body: SafeArea(
           child: Column(
         children: [
-          Expanded(
-            child: ValueListenableBuilder(
-              valueListenable: studentListNotifier,
-              builder: (BuildContext ctx, List<StudentModel> studentList,
-                  Widget? child) {
-                return ListView.separated(
-                  itemBuilder: (context, index) {
-                    final data = studentList[index];
-                    return ListTile(
-                      onTap: () {
-                        Navigator.of(context)
-                            .push(MaterialPageRoute(builder: (ctx) {
-                          return ProfileScreen(index: index);
-                        }));
-                      },
-                      leading: CircleAvatar(
-                        backgroundImage: FileImage(File(data.profile)),
-                      ),
-                      title: Text(data.name),
-                      subtitle: Text(data.age),
-                      trailing: FittedBox(
-                        child: Row(
-                          children: [
-                            IconButton(
-                              onPressed: () {
+          Consumer<ProviderForStudent>(
+              builder: (context, value, child) => value.students.isNotEmpty
+                  ? Expanded(
+                      child: ListView.separated(
+                        itemBuilder: (context, index) {
+                          return Flex(direction: Axis.vertical, children: [
+                            ListTile(
+                              onTap: () {
                                 Navigator.of(context)
-                                    .push(MaterialPageRoute(builder: (context) {
-                                  return EditStudent(index: index);
+                                    .push(MaterialPageRoute(builder: (ctx) {
+                                  return ProfileScreen(index: index);
                                 }));
                               },
-                              icon: const Icon(Icons.edit),
-                            ),
-                            IconButton(
-                              onPressed: () {
-                                showAlert(context, index);
-                              },
-                              icon: const Icon(
-                                Icons.delete,
-                                color: Color.fromARGB(255, 231, 132, 125),
+                              leading: CircleAvatar(
+                                backgroundImage: FileImage(
+                                    File(value.students[index].profile)),
+                              ),
+                              title: Text(value.students[index].name),
+                              subtitle: Text(value.students[index].age),
+                              trailing: FittedBox(
+                                child: Row(
+                                  children: [
+                                    IconButton(
+                                      onPressed: () {
+                                        Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                                builder: (context) {
+                                          return EditStudent(index: index);
+                                        }));
+                                      },
+                                      icon: const Icon(Icons.edit),
+                                    ),
+                                    IconButton(
+                                      onPressed: () {
+                                        showAlert(context, index, value);
+                                      },
+                                      icon: const Icon(
+                                        Icons.delete,
+                                        color:
+                                            Color.fromARGB(255, 231, 132, 125),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ],
-                        ),
+                          ]);
+                        },
+                        separatorBuilder: (ctx, index) {
+                          return const Divider();
+                        },
+                        itemCount: value.students.length,
                       ),
-                    );
-                  },
-                  separatorBuilder: (ctx, index) {
-                    return const Divider();
-                  },
-                  itemCount: studentList.length,
-                );
-              },
-            ),
-          )
+                    )
+                  : const Padding(
+                      padding: EdgeInsets.only(top: 50),
+                      child: Center(
+                          child: Text(
+                        'No items to Display',
+                        style: TextStyle(fontSize: 15),
+                      )),
+                    ))
         ],
       )),
     );
   }
 
-  void showAlert(BuildContext context, int index) {
+  void showAlert(BuildContext context, int index, dynamic value) {
     showDialog(
         context: context,
         builder: (ctx) {
           return AlertDialog(
             title: Text(
-              'Do you want to delete ${studentListNotifier.value[index].name}',
+              'Do you want to delete ${value.students[index].name}',
               style: const TextStyle(color: Colors.red),
             ),
             content: const Text(

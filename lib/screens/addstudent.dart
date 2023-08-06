@@ -1,43 +1,26 @@
 import 'dart:io';
+import 'package:database_1/db/providers/image_provide.dart';
 import 'package:database_1/screens/widget.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:image_picker/image_picker.dart';
-import '../db/functions/db_functions.dart';
+import 'package:provider/provider.dart';
 import '../db/model/data_model.dart';
+import '../db/providers/student_provider.dart';
 
-class AddStudent extends StatefulWidget {
-  const AddStudent({super.key});
+class AddStudent extends StatelessWidget {
+  AddStudent({super.key});
 
-  @override
-  State<AddStudent> createState() => _AddStudentState();
-}
-
-class _AddStudentState extends State<AddStudent> {
   final namecntrl = TextEditingController();
+
   final agecntrl = TextEditingController();
+
   final addresscntrl = TextEditingController();
+
   final numbercntrl = TextEditingController();
+
   final formKey = GlobalKey<FormState>();
 
-  File? photo;
   @override
   Widget build(BuildContext context) {
-    Future getImage(ImageSource source) async {
-      try {
-        
-        final image = await ImagePicker().pickImage(source: source);
-        if (image == null) return;
-        //final imageTemporary = File(image.path);
-
-        setState(() {
-          photo = File(image.path);
-        });
-      } on PlatformException catch (e) {
-        stdout.write('faild to pick image $e');
-      }
-    }
-
     const appTilte = 'Student Form';
     return Scaffold(
       appBar: AppBar(
@@ -47,118 +30,128 @@ class _AddStudentState extends State<AddStudent> {
           child: Padding(
         padding: const EdgeInsets.all(20),
         child: Form(
-          key: formKey,
-          child: ListView(
-            // mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              CircleAvatar(
-                radius: 100,
-                backgroundImage: photo != null
-                    ? FileImage(photo!)
-                    : const AssetImage('assets/man.jpg') as ImageProvider,
-              ),
-              const SizedBox(
-                height: 20,
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(65, 5, 65, 5),
-                child: CustomButton(
-                  title: 'pick from gallary',
-                  icon: Icons.image_outlined,
-                  onClick: () => getImage(ImageSource.gallery),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(65, 5, 65, 5),
-                child: CustomButton(
-                  title: 'pick from cemara',
-                  icon: Icons.camera,
-                  onClick: () => getImage(ImageSource.camera),
-                ),
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              TextFormField(
-                controller: namecntrl,
-                keyboardType: TextInputType.name,
-                decoration: Custom('Name', Icons.person),
-                validator: (value) {
-                  if (namecntrl.text.isEmpty) {
-                    return 'Name Field is Empty';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              TextFormField(
-                controller: agecntrl,
-                keyboardType: TextInputType.number,
-                decoration: Custom('Age', Icons.calendar_month),
-                maxLength: 3,
-                validator: (value) {
-                  if (agecntrl.text.isEmpty) {
-                    return 'Age Field is Empty';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              TextFormField(
-                controller: addresscntrl,
-                keyboardType: TextInputType.streetAddress,
-                decoration: Custom('Address', Icons.details),
-                validator: (value) {
-                  if (addresscntrl.text.isEmpty) {
-                    return 'Address Field is Empty';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              TextFormField(
-                controller: numbercntrl,
-                keyboardType: TextInputType.phone,
-                decoration: Custom('phone', Icons.phone_android),
-                maxLength: 10,
-                validator: (value) {
-                  if (numbercntrl.text.isEmpty) {
-                    return 'Phone Field is Empty';
-                  } else if (numbercntrl.text.length < 10) {
-                    return 'Enter a valid Phone number';
-                  }
-                  return null;
-                },
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(75, 5, 75, 5),
-                child: ElevatedButton(
-                  onPressed: () {
-                    if (formKey.currentState!.validate()) {
-                      if (photo?.path == null) {
-                        addingFailed();
-                      } else {
-                        addingSuccess();
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  Consumer<TempImageProvider>(
+                    builder: (context, value, child) => Column(
+                      children: [
+                        
+                        Align(
+                              alignment: Alignment.topCenter,
+                              child: value.tempImagePath == null
+                                  ? const CircleAvatar(
+                                      backgroundImage: AssetImage(
+                                          'assets/man.jpg'),
+                                      radius: 65,
+                                    )
+                                  : CircleAvatar(
+                                      radius: 65,
+                                      backgroundImage: FileImage(
+                                        File(value.tempImagePath!),
+                                      ),
+                                    )),
+                          const SizedBox(
+                            height: 10,
+                          ),
+                          ElevatedButton.icon(
+                              onPressed: () {
+                                getimage(value);
+                              },
+                              icon: const Icon(Icons.photo),
+                              label: const Text("Add Photo")),
+                          const SizedBox(
+                            height: 30,
+                          ),
+                      ],
+                    ),
+                  ),
+                  TextFormField(
+                    controller: namecntrl,
+                    keyboardType: TextInputType.name,
+                    decoration: Custom('Name', Icons.person),
+                    validator: (value) {
+                      if (namecntrl.text.isEmpty) {
+                        return 'Name Field is Empty';
                       }
-                    }
-                  },
-                  child: const Text('Add'),
-                ),
+                      return null;
+                    },
+                  ),
+                  const SizedBox(
+                    height: 10,
+                  ),
+                  TextFormField(
+                    controller: agecntrl,
+                    keyboardType: TextInputType.number,
+                    decoration: Custom('Age', Icons.calendar_month),
+                    maxLength: 3,
+                    validator: (value) {
+                      if (agecntrl.text.isEmpty) {
+                        return 'Age Field is Empty';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(
+                    height: 10,
+                  ),
+                  TextFormField(
+                    controller: addresscntrl,
+                    keyboardType: TextInputType.streetAddress,
+                    decoration: Custom('Address', Icons.details),
+                    validator: (value) {
+                      if (addresscntrl.text.isEmpty) {
+                        return 'Address Field is Empty';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(
+                    height: 10,
+                  ),
+                  TextFormField(
+                    controller: numbercntrl,
+                    keyboardType: TextInputType.phone,
+                    decoration: Custom('phone', Icons.phone_android),
+                    maxLength: 10,
+                    validator: (value) {
+                      if (numbercntrl.text.isEmpty) {
+                        return 'Phone Field is Empty';
+                      } else if (numbercntrl.text.length < 10) {
+                        return 'Enter a valid Phone number';
+                      }
+                      return null;
+                    },
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(75, 5, 75, 5),
+                    child: Consumer<TempImageProvider>(
+                      builder: (context, value, child) =>
+                          Consumer<ProviderForStudent>(
+                        builder: (context, value2, child) => ElevatedButton(
+                          onPressed: () {
+                            if (formKey.currentState!.validate()) {
+                              if (value.tempImagePath == null) {
+                                addingFailed(context);
+                              } else {
+                                addingSuccess(value2, context, value);
+                              }
+                            }
+                          },
+                          child: const Text('Add'),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            )),
       )),
     );
   }
 
-  void addingFailed() {
+  void addingFailed(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
       content: Text("Please add the pofile picture!"),
       backgroundColor: Colors.red,
@@ -170,15 +163,16 @@ class _AddStudentState extends State<AddStudent> {
     ));
   }
 
-  void addingSuccess() async {
+  void addingSuccess(ProviderForStudent value, BuildContext context,
+      TempImageProvider value2) async {
     StudentModel st = StudentModel(
-      profile: photo!.path,
+      profile: value2.tempImagePath!,
       name: namecntrl.text.trim(),
       age: agecntrl.text.trim(),
       address: addresscntrl.text.trim(),
       number: numbercntrl.text.trim(),
     );
-    await addstudent(st);
+    value.addStudent(st);
     // ignore: use_build_context_synchronously
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text('${namecntrl.text} is added to database successfully!'),
@@ -189,9 +183,13 @@ class _AddStudentState extends State<AddStudent> {
       closeIconColor: Colors.white,
       duration: const Duration(seconds: 2),
     ));
-    photo = null;
-    // ignore: use_build_context_synchronously
+    value2.tempImagePath = null;
+    value2.notify();
     Navigator.of(context).pop();
+  }
+
+  getimage(TempImageProvider value) async {
+    await value.getImage();
   }
 }
 
